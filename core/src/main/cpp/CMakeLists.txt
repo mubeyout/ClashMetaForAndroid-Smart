@@ -1,17 +1,29 @@
 cmake_minimum_required(VERSION 3.0)
 
-# 获取git hash
+# 获取git hash (带错误处理)
 
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR= ${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process(
   COMMAND git submodule foreach git log -1 --format=%H   
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
   OUTPUT_VARIABLE COMMIT_HASH
+  ERROR_QUIET
+  RESULT_VARIABLE GIT_RESULT
 )
-string(REPLACE "\n" ";" COMMIT_HASH "${COMMIT_HASH}")
-list(GET COMMIT_HASH 1 COMMIT_HASH)
-string (REGEX REPLACE "[\n\t\r]" "" COMMIT_HASH ${COMMIT_HASH})
-string(SUBSTRING ${COMMIT_HASH} 0 7 COMMIT_HASH)
+
+if(GIT_RESULT EQUAL 0 AND NOT "${COMMIT_HASH}" STREQUAL "")
+  string(REPLACE "\n" ";" COMMIT_HASH "${COMMIT_HASH}")
+  list(LENGTH COMMIT_HASH HASH_LIST_LEN)
+  if(HASH_LIST_LEN GREATER 1)
+    list(GET COMMIT_HASH 1 COMMIT_HASH)
+    string (REGEX REPLACE "[\n\t\r]" "" COMMIT_HASH ${COMMIT_HASH})
+    string(SUBSTRING ${COMMIT_HASH} 0 7 COMMIT_HASH)
+  else()
+    set(COMMIT_HASH "unknown")
+  endif()
+else()
+  set(COMMIT_HASH "smart01")
+endif()
 message(STATUS "git hash= ${COMMIT_HASH}")
 
 # 获取分支名称
@@ -19,11 +31,23 @@ execute_process(
   COMMAND git submodule foreach git branch -r --contains ${COMMIT_HASH}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
   OUTPUT_VARIABLE CURRENT_BRANCH
+  ERROR_QUIET
+  RESULT_VARIABLE BRANCH_RESULT
 )
-string(REPLACE "\n" ";" CURRENT_BRANCH "${CURRENT_BRANCH}")
-list(GET CURRENT_BRANCH 1 CURRENT_BRANCH)
-string (REGEX REPLACE "origin/" "" CURRENT_BRANCH ${CURRENT_BRANCH})
-string (REGEX REPLACE "[\n\t\r]" "" CURRENT_BRANCH ${CURRENT_BRANCH})
+
+if(BRANCH_RESULT EQUAL 0 AND NOT "${CURRENT_BRANCH}" STREQUAL "")
+  string(REPLACE "\n" ";" CURRENT_BRANCH "${CURRENT_BRANCH}")
+  list(LENGTH CURRENT_BRANCH BRANCH_LIST_LEN)
+  if(BRANCH_LIST_LEN GREATER 1)
+    list(GET CURRENT_BRANCH 1 CURRENT_BRANCH)
+    string (REGEX REPLACE "origin/" "" CURRENT_BRANCH ${CURRENT_BRANCH})
+    string (REGEX REPLACE "[\n\t\r]" "" CURRENT_BRANCH ${CURRENT_BRANCH})
+  else()
+    set(CURRENT_BRANCH "Smart")
+  endif()
+else()
+  set(CURRENT_BRANCH "Smart")
+endif()
 #string(SUBSTRING ${CURRENT_BRANCH} 0 8 CURRENT_BRANCH)
 message(STATUS "git current branch = ${CURRENT_BRANCH}")
 
